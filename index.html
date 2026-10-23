@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Didomi DSR Flows Sandbox</title>
+    <script src="scripts/dsr-capture.js"></script>
+    <link rel="icon" href="assets/favicon.ico" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --sandbox-navy: #04092d;
+        --sandbox-blue: #465cee;
+        --sandbox-pale: #f2f4ff;
+        --sandbox-white: #ffffff;
+        --sandbox-surface: #f9fafa;
+        --sandbox-border: #e0e0e0;
+        --sandbox-muted: #1d4153;
+        --sandbox-error: #ed4d43;
+      }
+      :where(#sandbox),
+      :where(#sandbox) * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--sandbox-surface);
+      }
+      #sandbox {
+        max-width: 1440px;
+        margin: auto;
+        padding: 32px 24px 64px;
+        color: var(--sandbox-navy);
+        font:
+          16px/1.6 "Montserrat",
+          sans-serif;
+      }
+      :where(#sandbox) header,
+      :where(#sandbox) nav,
+      :where(#sandbox) .actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+      :where(#sandbox) header {
+        justify-content: space-between;
+        margin-bottom: 32px;
+      }
+      :where(#sandbox) .brand {
+        font-size: 18px;
+        font-weight: 600;
+      }
+      :where(#sandbox) a {
+        color: var(--sandbox-blue);
+      }
+      :where(#sandbox) h1 {
+        font-size: 40px;
+        line-height: 1.2;
+        margin: 0 0 16px;
+        font-weight: 800;
+      }
+      :where(#sandbox) h2,
+      :where(#sandbox) legend {
+        font-size: 18px;
+        font-weight: 600;
+      }
+      :where(#sandbox) p {
+        max-width: 75ch;
+        margin: 0 0 24px;
+      }
+      :where(#sandbox) .intro {
+        margin-bottom: 24px;
+      }
+      :where(#sandbox) .workspace-tabs {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--sandbox-surface);
+        display: flex;
+        gap: 8px;
+        border-bottom: 1px solid var(--sandbox-border);
+        margin-bottom: 24px;
+        padding-bottom: 8px;
+      }
+      :where(#sandbox) .workspace-tabs button {
+        border: 0;
+        background: transparent;
+      }
+      :where(#sandbox) .workspace-tabs button[aria-selected="true"] {
+        background: var(--sandbox-navy);
+        color: var(--sandbox-white);
+      }
+      :where(#sandbox) .setup-layout {
+        display: grid;
+        grid-template-columns: 240px minmax(0, 1fr);
+        gap: 24px;
+        align-items: start;
+      }
+      :where(#sandbox) .setup-sidebar {
+        position: sticky;
+        top: 24px;
+      }
+      :where(#sandbox) .setup-sidebar a {
+        display: block;
+        padding: 8px 0;
+        font-size: 14px;
+      }
+      :where(#sandbox) .setup-group {
+        margin-top: 0;
+        border-bottom: 1px solid var(--sandbox-border);
+        padding: 16px 0;
+        scroll-margin-top: 24px;
+      }
+      :where(#sandbox) .setup-group > summary {
+        font-size: 18px;
+        padding-bottom: 8px;
+      }
+      :where(#sandbox) .setup-group fieldset {
+        margin: 0;
+        padding: 8px 0 16px;
+        border: 0;
+      }
+      :where(#sandbox) .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+      }
+      :where(#sandbox) .test-layout {
+        display: grid;
+        grid-template-columns: minmax(260px, 1fr) minmax(0, 2fr);
+        gap: 32px;
+        align-items: start;
+      }
+      :where(#sandbox) .test-layout > .runtime:first-child {
+        position: sticky;
+        top: 24px;
+      }
+      :where(#sandbox) #runtime-summary {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+        gap: 12px 16px;
+        margin-top: 24px;
+      }
+      :where(#sandbox) #runtime-summary dt {
+        font-size: 14px;
+        color: var(--sandbox-muted);
+      }
+      :where(#sandbox) #runtime-summary dd {
+        margin: 0;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+      }
+      :where(#sandbox) [role="tabpanel"] > .runtime,
+      :where(#sandbox) .test-layout > .runtime {
+        margin-top: 0;
+      }
+      :where(#sandbox) #config-panel > section {
+        background: var(--sandbox-white);
+        padding: 24px;
+        border: 1px solid var(--sandbox-border);
+        border-radius: 16px;
+      }
+      :where(#sandbox) #config-panel .actions {
+        margin-bottom: 16px;
+      }
+      :where(#sandbox) h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 24px 0 8px;
+      }
+      :where(#sandbox) #status {
+        padding: 16px 24px;
+        border: 1px solid var(--sandbox-border);
+        border-radius: 12px;
+        background: var(--sandbox-pale);
+        margin-bottom: 24px;
+        overflow-wrap: anywhere;
+      }
+      :where(#sandbox) #status[data-error="true"] {
+        border-color: var(--sandbox-error);
+      }
+      :where(#sandbox) form {
+        background: var(--sandbox-white);
+        border: 1px solid var(--sandbox-border);
+        border-radius: 16px;
+        padding: 24px;
+      }
+      :where(#sandbox) fieldset {
+        border: 0;
+        border-bottom: 1px solid var(--sandbox-border);
+        padding: 0 0 24px;
+        margin: 0 0 24px;
+        min-width: 0;
+      }
+      :where(#sandbox) legend {
+        padding: 0;
+        margin-bottom: 8px;
+      }
+      :where(#sandbox) .hint,
+      :where(#sandbox) small {
+        color: var(--sandbox-muted);
+        font-size: 14px;
+        overflow-wrap: anywhere;
+      }
+      :where(#sandbox) .fields input,
+      :where(#sandbox) .fields select,
+      :where(#sandbox) .fields textarea {
+        margin-top: 8px;
+      }
+      :where(#sandbox) .fields small {
+        display: block;
+        margin-top: 8px;
+      }
+      :where(#sandbox) .hint {
+        margin-bottom: 16px;
+      }
+      :where(#sandbox) .fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 24px;
+      }
+      :where(#sandbox) label {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        font-weight: 600;
+        min-width: 0;
+      }
+      :where(#sandbox) label small {
+        font-weight: 400;
+      }
+      :where(#sandbox) input,
+      :where(#sandbox) select,
+      :where(#sandbox) textarea,
+      :where(#sandbox) button {
+        font: inherit;
+      }
+      :where(#sandbox) input,
+      :where(#sandbox) select,
+      :where(#sandbox) textarea {
+        width: 100%;
+        color: var(--sandbox-navy);
+        background: var(--sandbox-white);
+        border: 1px solid var(--sandbox-border);
+        border-radius: 6px;
+        padding: 12px;
+      }
+      :where(#sandbox) textarea {
+        resize: vertical;
+        min-height: 128px;
+      }
+      :where(#sandbox) .wide {
+        grid-column: 1 / -1;
+      }
+      :where(#sandbox) button {
+        padding: 12px 16px;
+        border-radius: 6px;
+        border: 1px solid var(--sandbox-border);
+        background: var(--sandbox-white);
+        color: var(--sandbox-navy);
+        cursor: pointer;
+        font-weight: 600;
+      }
+      :where(#sandbox) button.primary {
+        background: var(--sandbox-blue);
+        color: var(--sandbox-white);
+        border-color: var(--sandbox-blue);
+      }
+      :where(#sandbox) form > .actions {
+        padding: 16px 0;
+        background: var(--sandbox-white);
+        border-top: 1px solid var(--sandbox-border);
+      }
+      :where(#sandbox) button:disabled {
+        cursor: default;
+        opacity: 0.5;
+      }
+      :where(#sandbox) :focus-visible {
+        outline: 2px solid var(--sandbox-blue);
+        outline-offset: 4px;
+      }
+      :where(#sandbox) .runtime {
+        margin: 32px 0;
+      }
+      :where(#sandbox) .runtime h2 {
+        margin-bottom: 16px;
+      }
+      :where(#sandbox) details {
+        margin-top: 24px;
+      }
+      :where(#sandbox) summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+      :where(#sandbox) pre {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        background: var(--sandbox-pale);
+        padding: 16px;
+        border-radius: 12px;
+        font: inherit;
+        font-size: 14px;
+      }
+      :where(#sandbox) #loaded-config {
+        max-height: 560px;
+        overflow: auto;
+      }
+      :where(#sandbox) [hidden] {
+        display: none !important;
+      }
+      :where(#sandbox) #config-tree {
+        max-height: 560px;
+        overflow: auto;
+        overflow-wrap: anywhere;
+        background: var(--sandbox-pale);
+        padding: 16px;
+        margin-top: 16px;
+        border-radius: 12px;
+        font-size: 14px;
+      }
+      :where(#sandbox) #config-tree details {
+        margin: 0;
+      }
+      :where(#sandbox) #config-tree summary {
+        font-size: 14px;
+        font-weight: 600;
+      }
+      :where(#sandbox) .json-children {
+        margin-left: 8px;
+        padding-left: 16px;
+        border-left: 1px solid var(--sandbox-border);
+      }
+      :where(#sandbox) .json-leaf {
+        padding: 4px 0;
+      }
+      :where(#sandbox) .json-string {
+        color: var(--sandbox-muted);
+      }
+      :where(#sandbox) .json-number,
+      :where(#sandbox) .json-boolean {
+        color: var(--sandbox-blue);
+      }
+      :where(#sandbox) button[aria-pressed="true"] {
+        background: var(--sandbox-pale);
+        border-color: var(--sandbox-blue);
+      }
+      :where(#sandbox) #config-findings,
+      :where(#sandbox) #runtime-events,
+      :where(#sandbox) #network-log {
+        list-style: none;
+        padding: 0;
+      }
+      :where(#sandbox) #config-findings > li,
+      :where(#sandbox) #runtime-events > li,
+      :where(#sandbox) #network-log > li {
+        border-bottom: 1px solid var(--sandbox-border);
+        padding: 16px 0;
+        overflow-wrap: anywhere;
+      }
+      :where(#sandbox) #config-findings p,
+      :where(#sandbox) #runtime-events p {
+        margin: 8px 0 0;
+        font-size: 14px;
+      }
+      :where(#sandbox) #runtime-events details,
+      :where(#sandbox) #network-log details {
+        margin: 0;
+      }
+      :where(#sandbox) #runtime-events pre,
+      :where(#sandbox) #network-log pre {
+        max-height: 240px;
+        overflow: auto;
+      }
+      :where(#sandbox) li[data-severity="error"] > strong {
+        color: var(--sandbox-error);
+      }
+      :where(#sandbox) #share-url {
+        min-height: 96px;
+      }
+      :where(#sandbox) footer {
+        margin-top: 32px;
+        font-size: 14px;
+        color: var(--sandbox-muted);
+      }
+      :where(#sandbox) #widget-problem {
+        max-width: 34rem;
+        width: calc(100% - 4rem);
+        border: 1px solid var(--sandbox-border);
+        border-radius: 12px;
+        padding: 1.5rem;
+        color: var(--sandbox-navy);
+        background: var(--sandbox-white);
+      }
+      :where(#sandbox) #widget-problem::backdrop {
+        background: rgb(0 0 0 / 55%);
+      }
+      @media (max-width: 640px) {
+        #sandbox {
+          padding: 24px 16px;
+        }
+        :where(#sandbox) h1 {
+          font-size: 32px;
+        }
+        :where(#sandbox) .fields {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        :where(#sandbox) form {
+          padding: 16px;
+        }
+      }
+      @media (max-width: 960px) {
+        :where(#sandbox) .setup-layout,
+        :where(#sandbox) .test-layout {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        :where(#sandbox) .setup-sidebar,
+        :where(#sandbox) .test-layout > .runtime:first-child {
+          position: static;
+        }
+        :where(#sandbox) #setup-navigation {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 16px;
+        }
+        :where(#sandbox) .workspace-tabs {
+          flex-wrap: wrap;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main id="sandbox">
+      <header>
+        <span class="brand">Didomi · Developer sandbox</span>
+        <nav>
+          <a href="https://didomi.github.io/ts-consent-flows/">Consent Flows</a
+          ><a href="https://github.com/didomi/ts-dsr-flows">Source code</a>
+        </nav>
+      </header>
+      <div class="intro">
+        <h1>Test your DSR Flows</h1>
+        <p>
+          Load a published Data Subject Request Flow, inspect its config, and
+          dry-run a submit payload. Changes update your share link. Apply and
+          reload to run them. Submits are never sent.
+        </p>
+      </div>
+      <div id="status" role="status" aria-live="polite">
+        Enter an API key and Flow ID to start.
+      </div>
+      <div class="workspace-tabs" role="tablist" aria-label="Sandbox workspace">
+        <button
+          id="tab-setup"
+          role="tab"
+          data-panel="setup"
+          aria-controls="setup-panel"
+          aria-selected="true"
+        >
+          1. Setup
+        </button>
+        <button
+          id="tab-test"
+          role="tab"
+          data-panel="test"
+          aria-controls="test-panel"
+          aria-selected="false"
+          tabindex="-1"
+        >
+          2. Test &amp; troubleshoot
+        </button>
+        <button
+          id="tab-config"
+          role="tab"
+          data-panel="config"
+          aria-controls="config-panel"
+          aria-selected="false"
+          tabindex="-1"
+        >
+          3. Configuration
+        </button>
+      </div>
+      <div id="setup-panel" role="tabpanel" aria-labelledby="tab-setup">
+        <div class="setup-layout">
+          <aside class="setup-sidebar">
+            <h2>Test settings</h2>
+            <p class="hint">
+              Start with the Flow details from Console → Flows → Publishing.
+              Turn on Mock mode to use the bundled mocked DidomiDSR.
+            </p>
+            <nav id="setup-navigation" aria-label="Setup sections"></nav>
+          </aside>
+          <form id="flow-form">
+            <div id="field-groups"></div>
+            <div class="actions">
+              <button class="primary" type="submit">Apply and reload</button
+              ><button id="copy-link" type="button">Copy share link</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div id="test-panel" role="tabpanel" aria-labelledby="tab-test" hidden>
+        <div class="test-layout">
+          <section class="runtime" aria-labelledby="runtime-title">
+            <h2 id="runtime-title" tabindex="-1">Widget controls</h2>
+            <p class="hint">
+              Change Widget ID and Layer name, then click Show widget without
+              reloading. Leave Widget ID as Use Flow rules to use the default
+              widget.
+            </p>
+            <div id="widget-fields" class="fields"></div>
+            <div class="actions">
+              <button id="show-widget" disabled>Show widget</button
+              ><button id="hide-widget" disabled>Hide widget</button
+              ><button id="preview-submit" disabled>
+                Preview submit payload
+              </button>
+            </div>
+            <dl id="runtime-summary">
+              <dt>SDK</dt>
+              <dd>Not loaded</dd>
+            </dl>
+            <details>
+              <summary>Runtime details</summary>
+              <pre id="runtime-info">SDK not loaded.</pre>
+            </details>
+            <section aria-labelledby="network-log-title">
+              <h3 id="network-log-title">Submission network log</h3>
+              <p class="hint">
+                Dry-run only. Matching POSTs are intercepted and never sent, in
+                staging and in production.
+              </p>
+              <ul id="network-log"></ul>
+            </section>
+          </section>
+          <section
+            id="troubleshooting"
+            class="runtime"
+            aria-labelledby="troubleshooting-title"
+          >
+            <h2 id="troubleshooting-title" tabindex="-1">Troubleshooting</h2>
+            <p class="hint">
+              Findings use the returned config and this page load. They are
+              checks to try, not confirmed causes.
+            </p>
+            <details>
+              <summary>Console setup checklist</summary>
+              <ol>
+                <li>
+                  <strong>Flows → Publishing:</strong> confirm the organization,
+                  public API key, Flow ID, platform, and staging or production
+                  selection match this test.
+                </li>
+                <li>
+                  <strong>Flows → Regulations:</strong> attach a DSAR regulation
+                  and check country and region coverage.
+                </li>
+                <li>
+                  <strong>Flows → Privacy Widgets:</strong> check assigned
+                  widgets, the default widget, and display rules.
+                </li>
+                <li>
+                  <strong>Publish</strong> the Flow to the environment selected
+                  here, then reload. Production configs are allowlisted.
+                </li>
+              </ol>
+            </details>
+            <p id="troubleshooting-summary" role="status" aria-live="polite">
+              Waiting for diagnostics.
+            </p>
+            <h3>Setup findings</h3>
+            <ul id="config-findings"></ul>
+            <details>
+              <summary>Technical evidence: captured runtime messages</summary>
+              <button id="clear-runtime-events" type="button">
+                Clear captured messages
+              </button>
+              <ul id="runtime-events"></ul>
+            </details>
+          </section>
+        </div>
+      </div>
+      <div
+        id="config-panel"
+        role="tabpanel"
+        aria-labelledby="tab-config"
+        hidden
+      >
+        <section class="runtime" aria-labelledby="loaded-config-title">
+          <h2 id="loaded-config-title">Loaded SDK configuration</h2>
+          <p class="hint">
+            JSON from the mocked fixture or DidomiDSR.getConfig() after the SDK
+            is ready.
+          </p>
+          <div class="actions">
+            <button id="inspect-config" disabled>Refresh loaded config</button>
+            <button id="copy-config" disabled>Copy JSON</button>
+          </div>
+          <div class="actions" role="group" aria-label="Configuration view">
+            <button id="config-tree-mode" type="button" aria-pressed="true">
+              Tree view
+            </button>
+            <button id="config-plain-mode" type="button" aria-pressed="false">
+              Plain JSON
+            </button>
+            <button id="expand-config" type="button">Expand sections</button>
+            <button id="collapse-config" type="button">
+              Collapse sections
+            </button>
+          </div>
+          <p
+            id="loaded-config-status"
+            class="hint"
+            role="status"
+            aria-live="polite"
+          ></p>
+          <div
+            id="config-tree"
+            tabindex="0"
+            aria-labelledby="loaded-config-title"
+          >
+            The SDK has not loaded a configuration yet.
+          </div>
+          <pre hidden id="loaded-config" tabindex="0">
+The SDK has not loaded a configuration yet.</pre>
+        </section>
+        <details open>
+          <summary>Generated loader URL</summary>
+          <pre id="loader-url">Enter an API key and Flow ID.</pre>
+        </details>
+        <details>
+          <summary>Embed snippet</summary>
+          <pre id="embed-snippet">Enter an API key and Flow ID.</pre>
+        </details>
+        <details>
+          <summary>Share link</summary>
+          <label for="share-url"
+            >Current settings<textarea id="share-url" readonly></textarea>
+          </label>
+        </details>
+        <details>
+          <summary>Effective window.didomiConfig</summary>
+          <pre id="effective-config">{}</pre>
+        </details>
+      </div>
+      <footer>
+        DSR (Data Subject Request) flows for Web. For QA, technical support, and
+        developers. Submits are dry-run only in staging and production. Consent
+        Flows use a separate sandbox.
+      </footer>
+      <dialog
+        id="widget-problem"
+        aria-labelledby="widget-problem-title"
+        aria-describedby="widget-problem-description widget-problem-detail"
+      >
+        <h2 id="widget-problem-title">Widget could not be displayed</h2>
+        <p id="widget-problem-description">
+          Read the Troubleshooting section on tab 2, “Test &amp; troubleshoot,”
+          for checks to try in Console.
+        </p>
+        <p id="widget-problem-detail"></p>
+        <div class="actions">
+          <button
+            id="widget-problem-troubleshooting"
+            class="primary"
+            type="button"
+          >
+            Read troubleshooting
+          </button>
+          <button id="close-widget-problem" type="button">Close</button>
+        </div>
+      </dialog>
+    </main>
+    <script src="scripts/sdk.js"></script>
+    <script type="module" src="scripts/dsr.js"></script>
+  </body>
+</html>

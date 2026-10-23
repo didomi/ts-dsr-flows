@@ -1,0 +1,37 @@
+{
+  "app": { "apiKey": "00000000-0000-4000-8000-000000000001" },
+  "brandConfig": { "brandConfigId": "brand-fixture", "versionId": "v1" },
+  "configId": "config-fixture",
+  "defaultWidgetId": "access-widget",
+  "environmentId": "env-staging",
+  "flowId": "flow-fixture",
+  "regulation": { "name": "gdpr", "regulationConfigId": "reg-fixture" },
+  "rules": [
+    {
+      "id": "rule-access",
+      "scenarios": [],
+      "targetWidgetId": "access-widget",
+      "priority": 1,
+      "triggerMode": "manual"
+    }
+  ],
+  "widgets": {
+    "access-widget": {
+      "versionId": "widget-v1",
+      "widgetType": "subject_request",
+      "defaultLanguage": "en",
+      "artifacts": {
+        "web": {
+          "en": {
+            "modern": "https://example.invalid/widgets/access.en.js",
+            "legacy": {
+              "url": "https://example.invalid/widgets/access.legacy.js",
+              "globalName": "DidomiDsrAccess"
+            }
+          }
+        }
+      }
+    }
+  },
+  "user": { "country": "FR" }
+}
