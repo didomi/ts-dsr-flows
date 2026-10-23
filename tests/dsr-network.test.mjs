@@ -88,15 +88,3 @@ test("unrelated fetch is forwarded", async () => {
   const response = await target.fetch("https://example.test/other");
   assert.equal(response.url, "https://example.test/other");
 });
-
-test("clearLog empties entries", async () => {
-  const target = { async fetch() {} };
-  const api = install(target);
-  await target.fetch("https://api.example.test/dsr/requests", {
-    method: "POST",
-    body: "{}",
-  });
-  assert.equal(api.getLog().length, 1);
-  api.clearLog();
-  assert.deepEqual(api.getLog(), []);
-});

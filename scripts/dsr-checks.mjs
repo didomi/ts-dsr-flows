@@ -17,11 +17,11 @@ function httpUrl(value) {
   }
 }
 
-function widgetHasBundle(def) {
-  const modern =
-    def?.artifacts?.web?.en?.modern ??
-    def?.artifacts?.web?.[def.defaultLanguage]?.modern;
-  return httpUrl(modern) || httpUrl(def?.bundleUrl);
+function modernAsset(def) {
+  return (
+    def.artifacts?.web?.en?.modern ??
+    def.artifacts?.web?.[def.defaultLanguage]?.modern
+  );
 }
 
 export function checkLoad(state = {}) {
@@ -52,28 +52,26 @@ export function checkLoad(state = {}) {
       "region is set without country.",
       "Set Country, or clear Region.",
     );
-  const blocked =
-    state.loaderStatus === 403 ||
-    state.loaderStatus === 404 ||
-    state.configStatus === 403 ||
-    state.configStatus === 404;
-  if (blocked && state.environment === "production")
+  const blockedStatus = [state.loaderStatus, state.configStatus].find(
+    (status) => status === 403 || status === 404,
+  );
+  if (blockedStatus && state.environment === "production")
     add(
       "production-allowlist",
       "warning",
       "Production configs are allowlisted",
-      `HTTP ${state.loaderStatus || state.configStatus} from the production loader or config URL.`,
+      `HTTP ${blockedStatus} from the production loader or config URL.`,
       "Production only serves DSR configs for allowlisted organizations. A 403 or 404 here usually means this org is not on that list, or the Flow was not published to production. Confirm publication and the allowlist, or test on staging.",
     );
-  else if (state.loaderStatus === 404 || state.configStatus === 404)
+  else if (blockedStatus === 404)
     add(
       "route-not-deployed",
       "error",
       "DSR loader route is not available",
-      `HTTP ${state.loaderStatus || state.configStatus} from the loader or config URL.`,
+      "HTTP 404 from the loader or config URL.",
       "The public /dsr CDN route may not be deployed yet. Set Configs base URL if you have a working host, or turn on Mock mode.",
     );
-  else if (state.loaderStatus === 403 || state.configStatus === 403)
+  else if (blockedStatus === 403)
     add(
       "feature-lock",
       "warning",
@@ -207,10 +205,9 @@ export function checkConfig(config, state = {}) {
       );
       continue;
     }
-    const modern =
-      definition.artifacts?.web?.en?.modern ??
-      definition.artifacts?.web?.[definition.defaultLanguage]?.modern;
-    if (!widgetHasBundle(definition))
+    const modern = httpUrl(modernAsset(definition));
+    const legacy = httpUrl(definition.bundleUrl);
+    if (!modern && !legacy)
       add(
         `widget-bundle-${id}`,
         "error",
@@ -218,7 +215,7 @@ export function checkConfig(config, state = {}) {
         `Widget ${id} has no http(s) artifacts.web modern URL or bundleUrl.`,
         "Confirm publication. Current configs serve artifacts.web; an older bundleUrl alone is not enough for every SDK build.",
       );
-    else if (!httpUrl(modern) && httpUrl(definition.bundleUrl))
+    else if (!modern)
       add(
         `widget-bundle-${id}`,
         "info",

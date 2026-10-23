@@ -62,17 +62,6 @@ export function install(target) {
   const original = target.fetch.bind(target);
   const entries = [];
   const listeners = new Set();
-  let nextId = 1;
-
-  function notify() {
-    for (const listener of listeners) listener(entries.slice());
-  }
-
-  function record(entry) {
-    entries.push(entry);
-    notify();
-  }
-
   target.fetch = async (input, init = {}) => {
     const url =
       typeof input === "string" || input instanceof URL
@@ -80,29 +69,19 @@ export function install(target) {
         : input.url;
     if (!isSubjectRequest(url)) return original(input, init);
     let body = init.body ?? "";
-    if (typeof body !== "string") {
-      try {
-        body = JSON.stringify(body);
-      } catch {
-        body = String(body);
-      }
-    }
-    let parsed = body;
     try {
-      parsed = JSON.parse(body);
+      body = JSON.parse(body);
     } catch {
-      parsed = body;
+      /* keep non-JSON bodies as sent */
     }
-    record({
-      id: nextId++,
-      at: new Date().toISOString(),
+    entries.push({
       method: (init.method || "GET").toUpperCase(),
       url,
-      headers: init.headers || { "Content-Type": "application/json" },
-      body: parsed,
+      body,
       status: "dry-run",
       note: "Not sent. Live submit is not enabled in this sandbox.",
     });
+    for (const listener of listeners) listener();
     return {
       ok: true,
       status: 200,
@@ -114,13 +93,8 @@ export function install(target) {
     getLog() {
       return entries.slice();
     },
-    clearLog() {
-      entries.length = 0;
-      notify();
-    },
     subscribe(listener) {
       listeners.add(listener);
-      return () => listeners.delete(listener);
     },
   };
 }

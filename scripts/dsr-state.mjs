@@ -129,7 +129,7 @@ const apiHosts = {
   production: "https://api.privacy-center.org/",
 };
 
-export function encodeConfig(value) {
+function encodeConfig(value) {
   return btoa(
     Array.from(new TextEncoder().encode(value), (byte) =>
       String.fromCharCode(byte),
@@ -137,7 +137,7 @@ export function encodeConfig(value) {
   );
 }
 
-export function decodeConfig(value) {
+function decodeConfig(value) {
   return new TextDecoder("utf-8", { fatal: true }).decode(
     Uint8Array.from(atob(value), (char) => char.charCodeAt(0)),
   );

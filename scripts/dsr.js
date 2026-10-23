@@ -26,14 +26,14 @@ const network = install(window);
 let applied;
 let ready = false;
 let readyTimer;
-let loadInfo = { ...initial };
+// Facts gathered while loading, read by the setup checks.
+const load = {};
 const viewer = createJSONViewer(
   document.querySelector('section[aria-labelledby="loaded-config-title"]'),
 );
 const troubleshooting = createTroubleshooting(
   document.querySelector("#troubleshooting"),
 );
-const workspace = { current: null };
 
 function sdk() {
   return window.DidomiDSR || window.DidomiSRM;
@@ -126,7 +126,7 @@ for (const [groupIndex, group] of groups.entries()) {
   section.append(summary, fieldset);
   document.querySelector("#field-groups").append(section);
 }
-workspace.current = createWorkspace();
+const workspace = createWorkspace();
 
 function stateFromForm() {
   return Object.fromEntries(
@@ -260,8 +260,8 @@ function renderLoadedConfig() {
   const feedback = document.querySelector("#loaded-config-status");
   const copy = document.querySelector("#copy-config");
   const state = {
-    ...loadInfo,
     ...(applied || initial),
+    ...load,
     widget_id: controls.get("widget_id").value,
     layer_name: controls.get("layer_name").value,
     ready,
@@ -293,7 +293,6 @@ function markReady() {
   document.querySelector("#hide-widget").disabled = false;
   document.querySelector("#preview-submit").disabled = false;
   document.querySelector("#inspect-config").disabled = false;
-  loadInfo = { ...loadInfo, ready: true };
   renderRuntime();
   renderLoadedConfig();
   message(
@@ -365,7 +364,7 @@ document
   .querySelector("#widget-problem-troubleshooting")
   .addEventListener("click", () => {
     widgetProblem.close();
-    workspace.current.activate("test");
+    workspace.activate("test");
     history.replaceState(null, "", "#troubleshooting-title");
     const heading = document.querySelector("#troubleshooting-title");
     heading.scrollIntoView({ block: "start", behavior: "smooth" });
@@ -444,21 +443,15 @@ document.querySelector("#copy-config").addEventListener("click", async () => {
 document
   .querySelector("#preview-submit")
   .addEventListener("click", async () => {
-    const sample = { type: "access", email: "qa@example.invalid" };
-    const current = sdk();
-    if (typeof current?.submit === "function") await current.submit(sample);
-    else {
-      const body = buildSubjectRequestBody(
-        sample,
-        current?.getConfig?.() || {},
-      );
-      await fetch(requestsURL(applied || stateFromForm()).href, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-    }
-    renderNetworkLog();
+    const body = buildSubjectRequestBody(
+      { type: "access", email: "qa@example.invalid" },
+      sdk()?.getConfig?.() || {},
+    );
+    await fetch(requestsURL(applied).href, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
     message("Dry-run submit recorded. Nothing was sent.");
   });
 network.subscribe(renderNetworkLog);
@@ -476,23 +469,12 @@ function waitForSdk(ms = 20000) {
   });
 }
 
-function loadScript(src) {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = src;
-    script.onload = resolve;
-    script.onerror = () => reject(new Error(`Could not load ${src}.`));
-    document.head.append(script);
-  });
-}
-
 async function start() {
   troubleshooting.update(undefined, { ...initial, ready: false });
   if (!preview(initial)) return;
   applied = initial;
   window.didomiConfig = buildConfig(applied);
-  window.__dsrRequestsURL = requestsURL(applied).href;
-  loadInfo = { ...applied, attemptedLoad: true, ready: false };
+  load.attemptedLoad = true;
   message(
     applied.mock === "1"
       ? "Loading the mocked DidomiDSR…"
@@ -500,7 +482,7 @@ async function start() {
   );
   readyTimer = setTimeout(() => {
     if (!ready) {
-      loadInfo = { ...loadInfo, timedOut: true };
+      load.timedOut = true;
       message(
         "The SDK has not become ready. Verify the API key, Flow publication, environment, and browser console.",
         true,
@@ -517,16 +499,15 @@ async function start() {
     if (applied.mock === "1") {
       const fixture = await fetch("fixtures/dsr-config.json");
       if (!fixture.ok) throw new Error("Could not load the mock fixture.");
-      window.__dsrFixture = await fixture.json();
-      await loadScript("scripts/dsr-mock.js");
-      await waitForSdk();
+      const { installMock } = await import("./dsr-mock.mjs");
+      installMock(await fixture.json(), requestsURL(applied).href);
       markReady();
       return;
     }
     const url = loaderURL(applied);
     try {
       const probe = await fetch(url.href);
-      loadInfo = { ...loadInfo, loaderStatus: probe.status };
+      load.loaderStatus = probe.status;
       if (probe.status === 404 || probe.status === 403) {
         clearTimeout(readyTimer);
         message(
@@ -537,15 +518,14 @@ async function start() {
         return;
       }
     } catch {
-      loadInfo = { ...loadInfo, unreachable: true };
+      load.unreachable = true;
     }
     try {
       const configResponse = await fetch(configURL(applied).href);
-      loadInfo = { ...loadInfo, configStatus: configResponse.status };
+      load.configStatus = configResponse.status;
       if (configResponse.ok) {
         const payload = await configResponse.json().catch(() => null);
-        if (payload?.internalError)
-          loadInfo = { ...loadInfo, internalError: true };
+        if (payload?.internalError) load.internalError = true;
         if (payload && !sdk()) viewer.update(payload);
       }
     } catch {
@@ -555,7 +535,7 @@ async function start() {
     const loader = document.querySelector("#spcloader");
     loader.addEventListener("error", () => {
       clearTimeout(readyTimer);
-      loadInfo = { ...loadInfo, unreachable: true };
+      load.unreachable = true;
       window.dsrDebugCapture?.record(
         "SDK startup",
         "error",

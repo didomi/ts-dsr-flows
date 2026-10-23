@@ -33,7 +33,7 @@ test("empty form is usable and does not load a loader or mock", async ({
   page.on("request", (request) => {
     if (
       request.url().includes("/loader.js") ||
-      request.url().includes("dsr-mock.js")
+      request.url().includes("dsr-mock")
     )
       requests.push(request.url());
   });
@@ -151,6 +151,23 @@ test("preview submit payload records a dry-run POST and sends nothing", async ({
   expect(leaked).toEqual([]);
 });
 
+test("mock widget form submit is dry-run with the mapped request type", async ({
+  page,
+}) => {
+  await blockLive(page);
+  await page.goto(`/index.html?${mockQuery}#test`);
+  await waitMockReady(page);
+  await page.getByRole("button", { name: "Show widget", exact: true }).click();
+  await page
+    .getByRole("combobox", { name: "Request type" })
+    .selectOption("deletion");
+  await page
+    .getByRole("button", { name: "Submit mock request", exact: true })
+    .click();
+  await expect(page.getByText("POST dry-run", { exact: true })).toBeVisible();
+  await expect(page.getByText(/"delete_data"/)).toBeVisible();
+});
+
 test("configuration tree renders the fixture and keeps HTML as text", async ({
   page,
 }) => {
@@ -177,7 +194,12 @@ test("configuration tree renders the fixture and keeps HTML as text", async ({
     .getByRole("button", { name: "Refresh loaded config", exact: true })
     .click();
   await page.getByRole("button", { name: "Plain JSON", exact: true }).click();
-  await expect(page.locator("#loaded-config")).toContainText("treeInjected");
+  await expect(
+    page
+      .getByRole("region", { name: "Loaded SDK configuration" })
+      .getByText(/treeInjected/)
+      .filter({ visible: true }),
+  ).toBeVisible();
   expect(await page.evaluate(() => window.treeInjected === undefined)).toBe(
     true,
   );
@@ -279,12 +301,11 @@ test("production environment selects production hosts in the loader URL", async 
   await page
     .getByRole("tab", { name: "3. Configuration", exact: true })
     .click();
-  await expect(page.locator("#loader-url")).toContainText(
-    "sdk.privacy-center.org",
-  );
-  await expect(page.locator("#loader-url")).toContainText(
-    "environment=production",
-  );
+  const loaderUrl = page.getByRole("group").filter({
+    has: page.getByText("Generated loader URL", { exact: true }),
+  });
+  await expect(loaderUrl).toContainText("sdk.privacy-center.org");
+  await expect(loaderUrl).toContainText("environment=production");
   expect(new URL(page.url()).searchParams.get("environment")).toBe(
     "production",
   );

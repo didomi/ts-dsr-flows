@@ -46,7 +46,7 @@ Production hosts: `https://sdk.privacy-center.org/` and `https://api.privacy-cen
 - `index.html`: sandbox page and styles.
 - `scripts/dsr.js`: page setup, loader or mock startup, and widget controls.
 - `scripts/dsr-*.mjs`: state, configuration viewer, diagnostics, and dry-run network log.
-- `scripts/dsr-mock.js`: bundled mocked DidomiDSR.
+- `scripts/dsr-mock.mjs`: bundled mocked DidomiDSR.
 - `fixtures/dsr-config.json`: fixture config for mock mode and tests.
 - `docs/dsr.md`: usage and what is not live yet.
 - `tests/`: unit and browser checks using the mock.

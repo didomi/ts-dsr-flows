@@ -27,7 +27,7 @@ Tabs support keyboard arrows, Home, and End. Fragments `#setup`, `#test`, and `#
 | `platform`                         | `web` only.                                                                                      |
 | `country`, `region`, `regulation`  | Loader geo and regulation overrides. Region requires country.                                    |
 | `configs_base_url`, `api_base_url` | Optional host overrides when the public `/dsr` route is not reachable.                           |
-| `mock`                             | `1` loads `scripts/dsr-mock.js` and `fixtures/dsr-config.json`.                                  |
+| `mock`                             | `1` loads `scripts/dsr-mock.mjs` and `fixtures/dsr-config.json`.                                 |
 | `config`, `apply_conf`             | Base64 JSON applied to `window.didomiConfig` only when `apply_conf=1`. Invalid JSON blocks load. |
 | `widget_id`, `layer_name`          | Show widget options. Not forwarded to the loader.                                                |
 
@@ -54,15 +54,22 @@ On master today the global is `window.DidomiSRM` and widgets mount in `#didomi-s
 
 ## What is not live yet
 
-- The public CloudFront `/dsr` route on the SDK CDN may still 404. Use **Configs base URL** or **Mock mode**.
+The live parts wait on three open merge requests:
+
+| Waits on                | What it unblocks                                                                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| web/core !3075          | CloudFront routing for `/dsr` on the SDK CDN. Until it lands the live loader returns 404; use **Mock mode** or **Configs base URL**. |
+| web/core !3100          | Renames the SDK from `DidomiSRM` to `DidomiDSR` and moves submissions to `/dsr/requests`.                                            |
+| privacy-center-api !512 | The public `POST /dsr/requests` route that real submissions go through.                                                              |
+
 - The live SDK name is still `DidomiSRM` on master; `DidomiDSR` is the product name used by the mock.
-- End-user submit through Privacy Center (`POST /dsr/requests`) is not enabled. This sandbox **never sends** a submit, in staging or production. The interceptor also matches the current-master path `/subject-requests/requests`.
+- This sandbox **never sends** a submit, in staging or production, even after these land. The interceptor also matches the current-master path `/subject-requests/requests`.
 
 ## Dry-run network log
 
-`scripts/dsr-network.mjs` wraps `fetch`. POSTs to `/dsr/requests` or `/subject-requests/requests` are recorded and resolved locally. The widget form submit and **Preview submit payload** both go through this wrapper.
+`scripts/dsr-network.mjs` wraps `fetch`. Any request to `/dsr/requests` or `/subject-requests/requests` is recorded and resolved locally. The widget form submit and **Preview submit payload** both go through this wrapper.
 
-Body shape: `flow_id`, `environment_id`, `config_id`, `regulation_config_id`, `type`, `identifiers`, optional `data_subject_message`. Type aliases: access → access_data, deletion → delete_data, portability → data_portability, rectification → correct_data, restriction → restrict_processing, objection → object_to_processing.
+Body shape (a guess from the open privacy-center-api MR, not a confirmed contract): `flow_id`, `environment_id`, `config_id`, `regulation_config_id`, `type`, `identifiers`, optional `data_subject_message`. Type aliases: access → access_data, deletion → delete_data, portability → data_portability, rectification → correct_data, restriction → restrict_processing, objection → object_to_processing.
 
 ## Production allowlist
 
