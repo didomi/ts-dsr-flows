@@ -1,0 +1,19 @@
+{
+  "name": "ts-dsr-flows",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sandbox for testing and troubleshooting Didomi DSR (Data Subject Request) flows",
+  "scripts": {
+    "start": "python3 -m http.server 4173 --bind 127.0.0.1",
+    "test": "npm run test:unit && npm run test:browser",
+    "test:unit": "node --test tests/dsr-state.test.mjs tests/dsr-checks.test.mjs tests/dsr-network.test.mjs",
+    "test:browser": "playwright test",
+    "prettier": "prettier --write .",
+    "prettier:check": "prettier --check ."
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "prettier": "^3.5.3"
+  }
+}
